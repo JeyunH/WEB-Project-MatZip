@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./etc/banner.PNG" alt="preview" width="320px" height="80px" />
+  <img src="./etc/banner.png" alt="preview" width="320px" height="80px" />
   <br />
   <h2> 맛있는 순간을 찾다, MatZip(맛집)</h2>
 </div>
