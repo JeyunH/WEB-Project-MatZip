@@ -1,7 +1,8 @@
 <div align="center">
-  <img src="./etc/banner.png" alt="preview" width="320px" height="80px" />
+  <img src="./etc/banner.png" alt="banner" width="400px" />
   <br />
   <h2> 맛있는 순간을 찾다, MatZip(맛집)</h2>
+  <img src="./etc/intro200.gif" alt="intro" width="800px" />
 </div>
 
 ## 1. 프로젝트 개요
