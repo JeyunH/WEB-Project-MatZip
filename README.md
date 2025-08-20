@@ -75,8 +75,8 @@ MatZip-WEB-Project/
 │   │       └── WEB-INF/
 │   │           ├── jsp/      # JSP 뷰 파일
 │   │           ├── tags/     # 범용 tag 파일
-│   │           ├── dispatcher-servlet.xml    # Spring Web Context 설정
-│   │           └── web.xml   # # 웹 애플리케이션 배포 서술자 (최초 진입점)
+│   │           ├── dispatcher-servlet.xml      # Spring Web Context 설정
+│   │           └── web.xml   # 웹 애플리케이션 배포 서술자 (최초 진입점)
 │   └── test/
-└── target/               # 빌드 결과물 (.war)
+└── target/                   # 빌드 결과물 (.war)
 ```
