@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ac.kopo.dao.MemberStatusLogDAO">
+
+    <!-- 회원 상태 변경 이력 기록 -->
+    <insert id="insertLog" parameterType="MemberStatusLogVO">
+        INSERT INTO MEMBER_STATUS_LOG (
+            MEMBER_ID,
+            ADMIN_ID,
+            PREVIOUS_STATUS,
+            NEW_STATUS,
+            REASON
+        ) VALUES (
+            #{memberId},
+            #{adminId},
+            #{previousStatus},
+            #{newStatus},
+            #{reason}
+        )
+    </insert>
+
+    <!-- 특정 회원의 가장 최근 비활성화 로그 조회 -->
+    <select id="selectLatestDeactivationLog" parameterType="string" resultType="kr.ac.kopo.vo.MemberStatusLogVO">
+        SELECT *
+        FROM (
+            SELECT
+                LOG_ID          AS logId,
+                MEMBER_ID       AS memberId,
+                ADMIN_ID        AS adminId,
+                PREVIOUS_STATUS AS previousStatus,
+                NEW_STATUS      AS newStatus,
+                REASON          AS reason,
+                LOG_DATE        AS logDate
+            FROM
+                MEMBER_STATUS_LOG
+            WHERE
+                MEMBER_ID = #{value}
+                AND NEW_STATUS = 'N'
+            ORDER BY
+                LOG_DATE DESC
+        )
+        WHERE ROWNUM = 1
+    </select>
+
+    <!-- 특정 회원의 전체 상태 변경 로그 개수 조회 -->
+    <select id="countLogsByMemberId" parameterType="string" resultType="int">
+        SELECT COUNT(*)
+        FROM MEMBER_STATUS_LOG
+        WHERE MEMBER_ID = #{value}
+    </select>
+
+    <!-- 특정 회원의 전체 상태 변경 로그 목록 조회 -->
+    <select id="selectLogsByMemberId" parameterType="string" resultType="kr.ac.kopo.vo.MemberStatusLogVO">
+        SELECT
+            LOG_ID          AS logId,
+            MEMBER_ID       AS memberId,
+            ADMIN_ID        AS adminId,
+            PREVIOUS_STATUS AS previousStatus,
+            NEW_STATUS      AS newStatus,
+            REASON          AS reason,
+            LOG_DATE        AS logDate
+        FROM
+            MEMBER_STATUS_LOG
+        WHERE
+            MEMBER_ID = #{value}
+        ORDER BY
+            LOG_DATE DESC
+    </select>
+
+</mapper>

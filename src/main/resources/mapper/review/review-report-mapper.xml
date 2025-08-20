@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ac.kopo.dao.ReviewReportDAO">
+
+    <!-- 새로운 리뷰 신고 등록 -->
+    <insert id="insertReport" parameterType="ReviewReportVO">
+        INSERT INTO REVIEW_REPORT (
+            REVIEW_ID, 
+            MEMBER_ID, 
+            REPORT_CATEGORY, 
+            REPORT_CONTENT
+        ) VALUES (
+            #{reviewId},
+            #{memberId},
+            #{reportCategory},
+            #{reportContent}
+        )
+    </insert>
+    
+    <!-- 신고 목록 전체 개수 조회 (검색 조건 포함) -->
+    <select id="selectReportCount" parameterType="map" resultType="int">
+        SELECT
+            COUNT(*)
+        FROM
+            REVIEW_REPORT R
+        JOIN
+            RESTAURANT_REVIEW RV ON R.REVIEW_ID = RV.REVIEW_ID
+        JOIN
+            MEMBER M ON R.MEMBER_ID = M.ID
+        <where>
+            <if test="status != null and status != '' and status != 'all'">
+                AND R.STATUS = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    RV.CONTENT LIKE '%' || #{keyword} || '%'
+                    OR M.ID LIKE '%' || #{keyword} || '%'
+                    OR M.NICKNAME LIKE '%' || #{keyword} || '%'
+                )
+            </if>
+        </where>
+    </select>
+
+    <!-- 신고 목록 조회 (페이징 및 검색 조건 포함) -->
+    <select id="selectReportList" parameterType="map" resultType="ReviewReportVO">
+        SELECT * FROM (
+            SELECT
+                ROWNUM AS RNUM,
+                A.*
+            FROM (
+                SELECT
+                    R.REPORT_ID AS reportId,
+                    R.REVIEW_ID AS reviewId,
+                    RV.RESTAURANT_ID AS restaurantId, -- 식당 ID 추가
+                    R.MEMBER_ID AS memberId,
+                    M.NICKNAME AS memberNickname, -- 신고자 닉네임 추가
+                    R.REPORT_CATEGORY AS reportCategory,
+                    R.REPORT_CONTENT AS reportContent,
+                    R.REPORT_DATE AS reportDate,
+                    R.STATUS,
+                    RV.CONTENT AS reviewContent -- 원본 리뷰 내용 추가
+                FROM
+                    REVIEW_REPORT R
+                JOIN
+                    RESTAURANT_REVIEW RV ON R.REVIEW_ID = RV.REVIEW_ID
+                JOIN
+                    MEMBER M ON R.MEMBER_ID = M.ID
+                <where>
+                    <if test="status != null and status != '' and status != 'all'">
+                        AND R.STATUS = #{status}
+                    </if>
+                    <if test="keyword != null and keyword != ''">
+                        AND (
+                            RV.CONTENT LIKE '%' || #{keyword} || '%'
+                            OR M.ID LIKE '%' || #{keyword} || '%'
+                            OR M.NICKNAME LIKE '%' || #{keyword} || '%'
+                        )
+                    </if>
+                </where>
+                ORDER BY
+                    R.REPORT_DATE DESC
+            ) A
+            WHERE ROWNUM &lt;= #{end}
+        )
+        WHERE RNUM &gt;= #{start}
+    </select>
+    
+    <!-- 신고 상태 변경 -->
+    <update id="updateReportStatus" parameterType="map">
+        UPDATE 
+            REVIEW_REPORT
+        SET
+            STATUS = #{status}
+        WHERE
+            REPORT_ID = #{reportId}
+    </update>
+    
+    <!-- 특정 신고 건 상세 조회 -->
+    <select id="selectReportById" parameterType="int" resultType="ReviewReportVO">
+        SELECT
+            REPORT_ID AS reportId,
+            REVIEW_ID AS reviewId,
+            MEMBER_ID AS memberId,
+            REPORT_CATEGORY AS reportCategory,
+            REPORT_CONTENT AS reportContent,
+            REPORT_DATE AS reportDate,
+            STATUS
+        FROM
+            REVIEW_REPORT
+        WHERE
+            REPORT_ID = #{reportId}
+    </select>
+    
+    <!-- 특정 사용자가 특정 리뷰를 이미 신고했는지 확인 -->
+    <select id="countReportByMemberAndReview" parameterType="map" resultType="int">
+        SELECT 
+            COUNT(*)
+        FROM 
+            REVIEW_REPORT
+        WHERE 
+            MEMBER_ID = #{memberId} AND REVIEW_ID = #{reviewId}
+    </select>
+
+</mapper>

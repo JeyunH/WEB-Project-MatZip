@@ -1,0 +1,38 @@
+# Build output
+/target/
+
+# IDE settings
+.classpath
+.project
+.settings/
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Log files
+*.log
+*.log.*
+
+# Maven temporary files
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# ERD files
+/sql/ERD/
+/sql/ERD.dmd
+
+# Sensitive configuration files
+/src/main/webapp/WEB-INF/dispatcher-servlet.xml
+/src/main/resources/api.properties
+
+# SQL files
+/sql/MatZip.sql
+/sql/MatZip2.sql
+/sql/MatZip3.sql

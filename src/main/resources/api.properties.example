@@ -1,0 +1,7 @@
+kakaomap.apikey=YOUR_KAKAO_API_KEY
+
+# File Upload Paths (Example for Windows)
+# Ensure the directory exists and the application has write permissions.
+upload.path.restaurant.basic=C:/matzip_uploads/restaurant_basic_img/
+upload.path.restaurant.main=C:/matzip_uploads/restaurant_main_img/
+upload.path.review=C:/matzip_uploads/review_img/

@@ -1,0 +1,562 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ac.kopo.dao.RestaurantDAO">
+	<!-- 여긴 맛집 리스트 호출 -->
+    <select id="selectRestaurantList" resultType="kr.ac.kopo.vo.RestaurantVO" parameterType="java.util.Map">
+	    SELECT 
+	        RESTAURANT_ID       AS restaurantId,
+	        NAME,
+	        REGION,
+	        CATEGORY,
+	        STAR_PERCENT        AS starPercent,
+	        STAR_SCORE          AS starScore,
+	        REVIEW_COUNT        AS reviewCount,
+	        MZ_SCORE          AS mzScore,
+	        ADDRESS,
+	        PHONE,
+	        MAIN_IMG_URL1       AS mainImgUrl1,
+	        MAIN_IMG_URL2       AS mainImgUrl2
+	    FROM RESTAURANT
+        <where>
+            AND status = 'Y'
+            <if test="region != null and !region.equals('all')">
+                AND REGION = #{region}
+            </if>
+            <if test="category != null and !category.equals('all')">
+                AND CATEGORY = #{category}
+            </if>
+        </where>
+	    ORDER BY
+        <choose>
+            <when test="sort.equals('star')">
+                STAR_SCORE DESC, REVIEW_COUNT DESC
+            </when>
+            <when test="sort.equals('latest')">
+                RESTAURANT_ID DESC
+            </when>
+            <when test="sort.equals('review')">
+                REVIEW_COUNT DESC, STAR_SCORE DESC
+            </when>
+            <otherwise> <!-- 기본값: mz -->
+                MZ_SCORE DESC, STAR_SCORE DESC
+            </otherwise>
+        </choose>
+	    OFFSET #{offset} ROWS FETCH NEXT #{limit} ROWS ONLY
+    </select>
+    
+	<!-- 여긴 총 맛집 갯수 조회 -->
+    <select id="selectRestaurantCount" resultType="int" parameterType="java.util.Map">
+        SELECT COUNT(*) FROM RESTAURANT
+        <where>
+            AND status = 'Y'
+            <if test="region != null and !region.equals('all')">
+                AND REGION = #{region}
+            </if>
+            <if test="category != null and !category.equals('all')">
+                AND CATEGORY = #{category}
+            </if>
+        </where>
+    </select>
+    
+    <!-- 맛집 리스트에서 검색기능 쿼리 -->
+    <select id="searchRestaurants" parameterType="map" resultType="kr.ac.kopo.vo.RestaurantVO">
+	    SELECT
+	        restaurantId, NAME, REGION, CATEGORY, starPercent, starScore, reviewCount, mzScore,
+	        ADDRESS, PHONE, mainImgUrl1, mainImgUrl2
+	    FROM (
+	        SELECT
+	            r.RESTAURANT_ID       AS restaurantId,
+	            r.NAME, r.REGION, r.CATEGORY, r.STAR_PERCENT AS starPercent, r.STAR_SCORE AS starScore,
+	            r.REVIEW_COUNT AS reviewCount, r.MZ_SCORE AS mzScore, r.ADDRESS, r.PHONE,
+	            r.MAIN_IMG_URL1 AS mainImgUrl1, r.MAIN_IMG_URL2 AS mainImgUrl2,
+	            MIN(CASE
+	                WHEN REPLACE(r.NAME, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%' THEN 1
+	                WHEN REPLACE(r.REGION, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%' THEN 2
+	                WHEN REPLACE(r.CATEGORY, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%' THEN 3
+	                WHEN REPLACE(m.MENU_NAME, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%' THEN 4
+	                ELSE 5
+	            END) AS search_priority
+	        FROM RESTAURANT r
+	        LEFT JOIN RESTAURANT_MENU m ON r.RESTAURANT_ID = m.RESTAURANT_ID
+            <where>
+                AND r.status = 'Y'
+                <if test="keyword != null and !keyword.equals('')">
+                    AND (
+                        REPLACE(r.NAME, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%'
+                        OR REPLACE(r.REGION, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%'
+                        OR REPLACE(r.CATEGORY, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%'
+                        OR REPLACE(r.ADDRESS, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%'
+                        OR REPLACE(m.MENU_NAME, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%'
+                    )
+                </if>
+                <if test="region != null and !region.equals('all')">
+                    AND r.REGION = #{region}
+                </if>
+                <if test="category != null and !category.equals('all')">
+                    AND r.CATEGORY = #{category}
+                </if>
+            </where>
+	        GROUP BY
+	            r.RESTAURANT_ID, r.NAME, r.REGION, r.CATEGORY, r.STAR_PERCENT, r.STAR_SCORE,
+	            r.REVIEW_COUNT, r.MZ_SCORE, r.ADDRESS, r.PHONE, r.MAIN_IMG_URL1, r.MAIN_IMG_URL2
+	    )
+	    ORDER BY
+            search_priority ASC,
+            <choose>
+                <when test="sort.equals('star')">
+                    starScore DESC, reviewCount DESC
+                </when>
+                <when test="sort.equals('latest')">
+                    restaurantId DESC
+                </when>
+                <when test="sort.equals('review')">
+                    reviewCount DESC, starScore DESC
+                </when>
+                <otherwise> <!-- 기본값: mz -->
+                    mzScore DESC, starScore DESC
+                </otherwise>
+            </choose>
+	    OFFSET #{offset} ROWS FETCH NEXT #{limit} ROWS ONLY
+	</select>
+	
+	<select id="countSearchedRestaurants" parameterType="map" resultType="int">
+	    SELECT COUNT(DISTINCT r.RESTAURANT_ID)
+	    FROM RESTAURANT r
+	    LEFT JOIN RESTAURANT_MENU m ON r.RESTAURANT_ID = m.RESTAURANT_ID
+        <where>
+            AND r.status = 'Y'
+            <if test="keyword != null and !keyword.equals('')">
+                AND (
+                    REPLACE(r.NAME, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%'
+                    OR REPLACE(r.REGION, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%'
+                    OR REPLACE(r.CATEGORY, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%'
+                    OR REPLACE(r.ADDRESS, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%'
+                    OR REPLACE(m.MENU_NAME, ' ', '') LIKE '%' || REPLACE(#{keyword}, ' ', '') || '%'
+                )
+            </if>
+            <if test="region != null and !region.equals('all')">
+                AND r.REGION = #{region}
+            </if>
+            <if test="category != null and !category.equals('all')">
+                AND r.CATEGORY = #{category}
+            </if>
+        </where>
+	</select>
+    
+    <!-- 여기서부터는 맛집 디테일 호출 -->
+    <select id="selectRestaurantById" parameterType="int" resultType="kr.ac.kopo.vo.RestaurantVO">
+        SELECT 
+            RESTAURANT_ID AS restaurantId,
+            NAME,
+            REGION,
+            CATEGORY,
+            STAR_PERCENT AS starPercent,
+            STAR_SCORE AS starScore,
+            REVIEW_COUNT AS reviewCount,
+            MZ_SCORE AS mzScore,
+            ADDRESS,
+            PHONE,
+            MAIN_IMG_URL1 AS mainImgUrl1,
+            MAIN_IMG_URL2 AS mainImgUrl2
+        FROM RESTAURANT
+        WHERE RESTAURANT_ID = #{restaurantId} AND status = 'Y'
+    </select>
+
+    <!-- 관리자용: ID로 맛집 정보 조회 (status 무관) -->
+    <select id="selectRestaurantByIdForAdmin" parameterType="int" resultType="kr.ac.kopo.vo.RestaurantVO">
+        SELECT 
+            RESTAURANT_ID AS restaurantId,
+            NAME,
+            REGION,
+            CATEGORY,
+            STAR_PERCENT AS starPercent,
+            STAR_SCORE AS starScore,
+            REVIEW_COUNT AS reviewCount,
+            MZ_SCORE AS mzScore,
+            ADDRESS,
+            PHONE,
+            MAIN_IMG_URL1 AS mainImgUrl1,
+            MAIN_IMG_URL2 AS mainImgUrl2,
+            STATUS
+        FROM RESTAURANT
+        WHERE RESTAURANT_ID = #{restaurantId}
+    </select>
+
+    <select id="selectTagListByRestaurantId" parameterType="int" resultType="kr.ac.kopo.vo.TagVO">
+        SELECT TAG_ID AS tagId, RESTAURANT_ID AS restaurantId, TAG_NAME AS tagName, TAG_TYPE AS tagType
+        FROM RESTAURANT_TAG WHERE RESTAURANT_ID = #{restaurantId}
+    </select>
+
+    <select id="selectMenuListByRestaurantId" parameterType="int" resultType="kr.ac.kopo.vo.MenuVO">
+        SELECT MENU_ID AS menuId, RESTAURANT_ID AS restaurantId, MENU_NAME AS menuName, PRICE
+        FROM RESTAURANT_MENU WHERE RESTAURANT_ID = #{restaurantId}
+    </select>
+
+    <select id="selectImageListByRestaurantId" parameterType="int" resultType="kr.ac.kopo.vo.ImageVO">
+        SELECT
+            I.IMAGE_ID      AS imageId,
+            I.RESTAURANT_ID AS restaurantId,
+            I.IMAGE_URL     AS imageUrl,
+            I.REVIEW_ID     AS reviewId,
+            I.MEMBER_ID     AS memberId,
+            I.IMG_TYPE      AS imgType,
+            I.REGDATE       AS regdate
+        FROM RESTAURANT_IMAGE I
+        LEFT JOIN MEMBER M ON I.MEMBER_ID = M.ID
+        WHERE I.RESTAURANT_ID = #{restaurantId}
+          AND (I.IMG_TYPE != 'REVIEW' OR M.STATUS = 'Y')
+        ORDER BY I.IMAGE_ID DESC
+    </select>
+
+    <!-- 랜덤 맛집 ID 조회 -->
+    <select id="getRandomRestaurantId" resultType="int">
+        SELECT RESTAURANT_ID
+          FROM (
+            SELECT RESTAURANT_ID
+              FROM RESTAURANT
+             WHERE status = 'Y'
+             ORDER BY DBMS_RANDOM.VALUE
+          )
+         WHERE ROWNUM = 1
+    </select>
+
+    <!-- ▼▼▼▼▼ [추가] 필터 기능용 쿼리 ▼▼▼▼▼ -->
+    <!-- 인기 지역 목록 조회 (맛집 많은 순) -->
+    <select id="selectTopRegions" parameterType="int" resultType="string">
+        SELECT REGION
+        FROM (
+            SELECT REGION, COUNT(*) AS CNT
+            FROM RESTAURANT
+            WHERE REGION IS NOT NULL
+            GROUP BY REGION
+            ORDER BY CNT DESC
+        )
+        WHERE ROWNUM &lt;= #{limit}
+    </select>
+
+    <!-- 전체 지역 목록 조회 (가나다 순) -->
+    <select id="selectAllRegions" resultType="string">
+        SELECT DISTINCT REGION
+        FROM RESTAURANT
+        WHERE REGION IS NOT NULL
+        ORDER BY REGION ASC
+    </select>
+
+    <!-- 인기 카테고리 목록 조회 (맛집 많은 순) -->
+    <select id="selectTopCategories" parameterType="int" resultType="string">
+        SELECT CATEGORY
+        FROM (
+            SELECT CATEGORY, COUNT(*) AS CNT
+            FROM RESTAURANT
+            WHERE CATEGORY IS NOT NULL
+            GROUP BY CATEGORY
+            ORDER BY CNT DESC
+        )
+        WHERE ROWNUM &lt;= #{limit}
+    </select>
+
+    <!-- 전체 카테고리 목록 조회 (가나다 순) -->
+    <select id="selectAllCategories" resultType="string">
+        SELECT DISTINCT CATEGORY
+        FROM RESTAURANT
+        WHERE CATEGORY IS NOT NULL
+        ORDER BY CATEGORY ASC
+    </select>
+    <!-- ▲▲▲▲▲ 여기까지 추가 ▲▲▲▲▲ -->
+
+    <!-- ▼▼▼▼▼ [수정] 메인 페이지 주간 랭킹용 쿼리 (GROUP BY 오류 수정) ▼▼▼▼▼ -->
+    <!-- 1. 트렌디 맛집 (최근 일주일 찜 많은 순 TOP 5) -->
+    <select id="selectTrendyRestaurants" resultType="kr.ac.kopo.vo.RestaurantVO">
+        SELECT * FROM (
+            SELECT 
+                R.RESTAURANT_ID AS restaurantId, R.NAME, R.REGION, R.CATEGORY, R.MAIN_IMG_URL1 AS mainImgUrl1,
+                COUNT(F.RESTAURANT_ID) AS favoriteCount
+            FROM RESTAURANT R
+            JOIN FAVORITE_RESTAURANT F ON R.RESTAURANT_ID = F.RESTAURANT_ID
+            WHERE R.status = 'Y' AND F.REGDATE >= SYSDATE - 7
+            GROUP BY R.RESTAURANT_ID, R.NAME, R.REGION, R.CATEGORY, R.MAIN_IMG_URL1, R.MZ_SCORE
+            ORDER BY favoriteCount DESC, R.MZ_SCORE DESC
+        ) WHERE ROWNUM &lt;= 5
+    </select>
+
+    <!-- 2. 뜨거운 감자 (최근 일주일 리뷰 많은 순 TOP 5) -->
+    <select id="selectHotRestaurants" resultType="kr.ac.kopo.vo.RestaurantVO">
+        SELECT * FROM (
+            SELECT 
+                R.RESTAURANT_ID AS restaurantId, R.NAME, R.REGION, R.CATEGORY, R.MAIN_IMG_URL1 AS mainImgUrl1,
+                COUNT(V.REVIEW_ID) AS reviewCount
+            FROM RESTAURANT R
+            JOIN RESTAURANT_REVIEW V ON R.RESTAURANT_ID = V.RESTAURANT_ID
+            WHERE R.status = 'Y' AND V.REGDATE >= SYSDATE - 7
+            GROUP BY R.RESTAURANT_ID, R.NAME, R.REGION, R.CATEGORY, R.MAIN_IMG_URL1, R.MZ_SCORE
+            ORDER BY reviewCount DESC, R.MZ_SCORE DESC
+        ) WHERE ROWNUM &lt;= 5
+    </select>
+
+    <!-- 3. 꾸준한 맛집 (최근 일주일 별점 평균 높은 순 TOP 5) -->
+    <select id="selectSteadyRestaurants" resultType="kr.ac.kopo.vo.RestaurantVO">
+        SELECT * FROM (
+            SELECT 
+                R.RESTAURANT_ID AS restaurantId, R.NAME, R.REGION, R.CATEGORY, R.MAIN_IMG_URL1 AS mainImgUrl1,
+                AVG(V.STAR_SCORE) AS avgStarScore
+            FROM RESTAURANT R
+            JOIN RESTAURANT_REVIEW V ON R.RESTAURANT_ID = V.RESTAURANT_ID
+            WHERE R.status = 'Y' AND V.REGDATE >= SYSDATE - 7
+            GROUP BY R.RESTAURANT_ID, R.NAME, R.REGION, R.CATEGORY, R.MAIN_IMG_URL1, R.MZ_SCORE
+            HAVING COUNT(V.REVIEW_ID) >= 3 -- 최소 3개 이상 리뷰가 달린 맛집만 대상
+            ORDER BY avgStarScore DESC, R.MZ_SCORE DESC
+        ) WHERE ROWNUM &lt;= 5
+    </select>
+    <!-- ▲▲▲▲▲ 여기까지 추가 ▲▲▲▲▲ -->
+
+    <!-- 관리자용: 맛집 총 개수 조회 (검색 기능 포함) -->
+    <select id="selectRestaurantCountForAdmin" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM RESTAURANT
+        <where>
+            <if test="status != null and !status.equals('all')">
+                AND STATUS = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (NAME LIKE '%' || #{keyword} || '%' OR REGION LIKE '%' || #{keyword} || '%' OR CATEGORY LIKE '%' || #{keyword} || '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- 관리자용: 페이징 처리된 맛집 목록 조회 -->
+    <select id="selectRestaurantsForAdmin" parameterType="map" resultType="kr.ac.kopo.vo.RestaurantVO">
+        SELECT
+            RESTAURANT_ID as restaurantId, NAME, REGION, CATEGORY, STAR_SCORE as starScore, REVIEW_COUNT as reviewCount, STATUS
+        FROM (
+            SELECT ROWNUM AS RNUM, T1.*
+            FROM (
+                SELECT
+                    RESTAURANT_ID, NAME, REGION, CATEGORY, STAR_SCORE, REVIEW_COUNT, STATUS
+                FROM
+                    RESTAURANT
+                <where>
+                    <if test="status != null and !status.equals('all')">
+                        AND STATUS = #{status}
+                    </if>
+                    <if test="keyword != null and keyword != ''">
+                        AND (NAME LIKE '%' || #{keyword} || '%' OR REGION LIKE '%' || #{keyword} || '%' OR CATEGORY LIKE '%' || #{keyword} || '%')
+                    </if>
+                </where>
+                ORDER BY RESTAURANT_ID DESC
+            ) T1
+        )
+        WHERE RNUM BETWEEN #{start} AND #{end}
+    </select>
+
+    <!-- 관리자용: 맛집 상태 변경 -->
+    <update id="updateRestaurantStatus" parameterType="map">
+        UPDATE RESTAURANT
+        SET STATUS = #{status}
+        WHERE RESTAURANT_ID = #{restaurantId}
+    </update>
+
+    <!-- 관리자용: 맛집 정보 업데이트 -->
+    <update id="updateRestaurant" parameterType="kr.ac.kopo.vo.RestaurantVO">
+        UPDATE RESTAURANT
+           SET NAME = #{name},
+               ADDRESS = #{address},
+               PHONE = #{phone},
+               REGION = #{region},
+               CATEGORY = #{category},
+               MAIN_IMG_URL1 = #{mainImgUrl1},
+               MAIN_IMG_URL2 = #{mainImgUrl2}
+         WHERE RESTAURANT_ID = #{restaurantId}
+    </update>
+
+    <!-- 별점 정보 업데이트 -->
+    <update id="updateRating" parameterType="map">
+        UPDATE RESTAURANT
+           SET STAR_SCORE = #{starScore},
+               REVIEW_COUNT = #{reviewCount},
+               STAR_PERCENT = (#{starScore} / 5) * 100
+         WHERE RESTAURANT_ID = #{restaurantId}
+    </update>
+
+    <!-- 관리자용: 맛집의 모든 메뉴 삭제 -->
+    <delete id="deleteMenusByRestaurantId" parameterType="int">
+        DELETE FROM RESTAURANT_MENU WHERE RESTAURANT_ID = #{restaurantId}
+    </delete>
+
+    <!-- 관리자용: 맛집의 모든 태그 삭제 -->
+    <delete id="deleteTagsByRestaurantId" parameterType="int">
+        DELETE FROM RESTAURANT_TAG WHERE RESTAURANT_ID = #{restaurantId}
+    </delete>
+
+    <!-- 관리자용: 메뉴 등록 -->
+    <insert id="insertMenu" parameterType="kr.ac.kopo.vo.MenuVO">
+        INSERT INTO RESTAURANT_MENU (MENU_ID, RESTAURANT_ID, MENU_NAME, PRICE)
+        VALUES (RESTAURANT_MENU_SEQ.NEXTVAL, #{restaurantId}, #{menuName}, #{price, jdbcType=NUMERIC})
+    </insert>
+
+    <!-- 관리자용: 태그 등록 -->
+    <insert id="insertTag" parameterType="kr.ac.kopo.vo.TagVO">
+        INSERT INTO RESTAURANT_TAG (TAG_ID, RESTAURANT_ID, TAG_NAME, TAG_TYPE)
+        VALUES (RESTAURANT_TAG_SEQ.NEXTVAL, #{restaurantId}, #{tagName}, #{tagType})
+    </insert>
+
+    <!-- 관리자용: 신규 맛집 등록 (트리거가 ID를 자동 생성) -->
+    <insert id="insertRestaurant" parameterType="kr.ac.kopo.vo.RestaurantVO">
+        <selectKey keyProperty="restaurantId" resultType="int" order="AFTER">
+            SELECT RESTAURANT_SEQ.CURRVAL FROM DUAL
+        </selectKey>
+        INSERT INTO RESTAURANT (
+            NAME, ADDRESS, PHONE, REGION, CATEGORY,
+            MAIN_IMG_URL1, MAIN_IMG_URL2, STATUS,
+            STAR_SCORE, REVIEW_COUNT, MZ_SCORE, STAR_PERCENT, REGDATE
+        ) VALUES (
+            #{name}, #{address}, #{phone, jdbcType=VARCHAR}, #{region}, #{category},
+            #{mainImgUrl1, jdbcType=VARCHAR}, #{mainImgUrl2, jdbcType=VARCHAR}, #{status},
+            0, 0, 0, 0, SYSDATE
+        )
+    </insert>
+
+    <!-- =================================================================================== -->
+    <!-- 통계 관련 쿼리 -->
+    <!-- =================================================================================== -->
+    <select id="selectTotalRestaurantCount" resultType="int">
+        SELECT COUNT(*) FROM RESTAURANT
+    </select>
+
+    <select id="selectApprovedRestaurantCount" resultType="int">
+        SELECT COUNT(*) FROM RESTAURANT WHERE STATUS = 'Y'
+    </select>
+
+    <select id="selectUnapprovedRestaurantCount" resultType="int">
+        SELECT COUNT(*) FROM RESTAURANT WHERE STATUS = 'N'
+    </select>
+
+    <!-- 일별 신규 맛집 등록 수 (최근 30일) -->
+    <select id="selectDailyNewRestaurants" resultType="java.util.Map">
+        SELECT TO_CHAR(REGDATE, 'YYYY-MM-DD') AS "period", COUNT(*) AS "count"
+        FROM RESTAURANT
+        WHERE REGDATE >= SYSDATE - 30
+        GROUP BY TO_CHAR(REGDATE, 'YYYY-MM-DD')
+        ORDER BY "period" ASC
+    </select>
+
+    <!-- 주별 신규 맛집 등록 수 (최근 12주) -->
+    <select id="selectWeeklyNewRestaurants" resultType="java.util.Map">
+        SELECT TO_CHAR(TRUNC(REGDATE, 'IW'), 'YYYY-MM-DD') AS "period", COUNT(*) AS "count"
+        FROM RESTAURANT
+        WHERE REGDATE >= TRUNC(SYSDATE, 'IW') - (12 * 7)
+        GROUP BY TO_CHAR(TRUNC(REGDATE, 'IW'), 'YYYY-MM-DD')
+        ORDER BY "period" ASC
+    </select>
+
+    <!-- 월별 신규 맛집 등록 수 (최근 12개월) -->
+    <select id="selectMonthlyNewRestaurants" resultType="java.util.Map">
+        SELECT TO_CHAR(TRUNC(REGDATE, 'MM'), 'YYYY-MM') AS "period", COUNT(*) AS "count"
+        FROM RESTAURANT
+        WHERE REGDATE >= ADD_MONTHS(TRUNC(SYSDATE, 'MM'), -12)
+        GROUP BY TO_CHAR(TRUNC(REGDATE, 'MM'), 'YYYY-MM')
+        ORDER BY "period" ASC
+    </select>
+
+    <!-- 맛집 리뷰 순위 (상위 10개) -->
+    <select id="selectTopRestaurantsByReview" parameterType="int" resultType="kr.ac.kopo.vo.RestaurantVO">
+        SELECT * FROM (
+            SELECT
+                RESTAURANT_ID as restaurantId,
+                NAME,
+                CATEGORY,
+                REVIEW_COUNT as reviewCount
+            FROM RESTAURANT
+            WHERE STATUS = 'Y'
+            ORDER BY REVIEW_COUNT DESC, MZ_SCORE DESC
+        )
+        WHERE ROWNUM &lt;= #{limit}
+    </select>
+
+    <!-- 맛집 찜 순위 (상위 10개) -->
+    <select id="selectTopRestaurantsByFavorite" parameterType="int" resultType="kr.ac.kopo.vo.RestaurantVO">
+        SELECT * FROM (
+            SELECT
+                r.RESTAURANT_ID as restaurantId,
+                r.NAME,
+                r.CATEGORY,
+                (SELECT COUNT(*) FROM FAVORITE_RESTAURANT f WHERE f.RESTAURANT_ID = r.RESTAURANT_ID) as favoriteCount
+            FROM RESTAURANT r
+            WHERE r.STATUS = 'Y'
+            ORDER BY favoriteCount DESC, r.MZ_SCORE DESC
+        )
+        WHERE ROWNUM &lt;= #{limit}
+    </select>
+
+    <!-- 맛집 평점 순위 (상위 10개, 최소 리뷰 5개 이상) -->
+    <select id="selectTopRestaurantsByRating" parameterType="int" resultType="kr.ac.kopo.vo.RestaurantVO">
+        SELECT * FROM (
+            SELECT
+                RESTAURANT_ID as restaurantId,
+                NAME,
+                CATEGORY,
+                STAR_SCORE as starScore,
+                REVIEW_COUNT as reviewCount
+            FROM RESTAURANT
+            WHERE STATUS = 'Y' AND REVIEW_COUNT >= 5
+            ORDER BY STAR_SCORE DESC, REVIEW_COUNT DESC
+        )
+        WHERE ROWNUM &lt;= #{limit}
+    </select>
+
+    <!-- 신규 맛집 등록을 위한 다음 ID 조회 (MAX + 1 방식) -->
+    <select id="selectMaxRestaurantId" resultType="int">
+        SELECT NVL(MAX(RESTAURANT_ID), 0) FROM RESTAURANT
+    </select>
+
+    <!-- MZ스코어 계산용 통계 조회 -->
+    <select id="getMzScoreStatistics" resultType="java.util.Map">
+        WITH FavoriteCounts AS (
+            SELECT
+                RESTAURANT_ID,
+                COUNT(*) AS fav_count
+            FROM
+                FAVORITE_RESTAURANT
+            GROUP BY
+                RESTAURANT_ID
+        )
+        SELECT
+            MIN(r.REVIEW_COUNT) AS minReview,
+            MAX(r.REVIEW_COUNT) AS maxReview,
+            MIN(NVL(fc.fav_count, 0)) AS minFavorite,
+            MAX(NVL(fc.fav_count, 0)) AS maxFavorite
+        FROM
+            RESTAURANT r
+        LEFT JOIN
+            FavoriteCounts fc ON r.RESTAURANT_ID = fc.RESTAURANT_ID
+        WHERE
+            r.STATUS = 'Y'
+    </select>
+
+    <!-- MZ스코어 업데이트 -->
+    <update id="updateMzScore" parameterType="java.util.Map">
+        UPDATE RESTAURANT
+        SET MZ_SCORE = #{mzScore}
+        WHERE RESTAURANT_ID = #{restaurantId}
+    </update>
+
+    <!-- MZ스코어 계산을 위한 모든 맛집 정보 조회 (찜 수 포함) -->
+    <select id="selectAllRestaurantsForMzScore" resultType="kr.ac.kopo.vo.RestaurantVO">
+        SELECT
+            r.RESTAURANT_ID     AS restaurantId,
+            r.STAR_SCORE        AS starScore,
+            r.REVIEW_COUNT      AS reviewCount,
+            NVL(fc.fav_count, 0) AS favoriteCount
+        FROM
+            RESTAURANT r
+        LEFT JOIN
+            (SELECT RESTAURANT_ID, COUNT(*) AS fav_count
+             FROM FAVORITE_RESTAURANT
+             GROUP BY RESTAURANT_ID) fc
+        ON r.RESTAURANT_ID = fc.RESTAURANT_ID
+        WHERE
+            r.STATUS = 'Y'
+    </select>
+</mapper>

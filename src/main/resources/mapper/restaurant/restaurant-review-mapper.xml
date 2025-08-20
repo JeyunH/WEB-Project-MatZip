@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ac.kopo.dao.ReviewDAO">
+
+    <!-- 리뷰 등록 -->
+    <insert id="insertReview" parameterType="kr.ac.kopo.vo.RestaurantReviewVO">
+	    <selectKey keyProperty="reviewId" order="AFTER" resultType="int">
+	        SELECT RESTAURANT_REVIEW_SEQ.CURRVAL FROM DUAL
+	    </selectKey>
+	    INSERT INTO RESTAURANT_REVIEW (
+	        RESTAURANT_ID, MEMBER_ID, CONTENT, STAR_SCORE
+	    ) VALUES (
+	        #{restaurantId}, #{memberId}, #{content}, #{starScore}
+	    )
+	</insert>
+
+    <!-- 식당별 리뷰 조회 -->
+    
+	<resultMap id="reviewWithImagesResultMap" type="kr.ac.kopo.vo.RestaurantReviewVO">
+	    <id property="reviewId" column="REVIEW_ID" />
+	    <result property="restaurantId" column="RESTAURANT_ID" />
+	    <result property="memberId" column="MEMBER_ID" />
+	    <result property="content" column="CONTENT" />
+	    <result property="starScore" column="STAR_SCORE" />
+	    <result property="regdate" column="REGDATE" />
+	    <result property="nickname" column="NICKNAME" />
+        <result property="restaurantName" column="RESTAURANT_NAME" />
+	
+	    <collection property="imageList" ofType="kr.ac.kopo.vo.RestaurantImageVO">
+	        <id property="imageId" column="IMAGE_ID" />
+	        <result property="imageUrl" column="IMAGE_URL" />
+	        <result property="imgType" column="IMG_TYPE" />
+	    </collection>
+	</resultMap>
+	
+	<select id="selectReviewsWithImagesByRestaurantId" parameterType="int" resultMap="reviewWithImagesResultMap">
+	    SELECT
+	        R.REVIEW_ID, R.RESTAURANT_ID, R.MEMBER_ID, R.CONTENT, R.STAR_SCORE, R.REGDATE, M.NICKNAME,
+	        I.IMAGE_ID, I.IMAGE_URL, I.IMG_TYPE,
+            (SELECT NAME FROM RESTAURANT WHERE RESTAURANT_ID = R.RESTAURANT_ID) AS RESTAURANT_NAME
+	    FROM
+	        RESTAURANT_REVIEW R
+	    JOIN
+	        MEMBER M ON R.MEMBER_ID = M.ID
+	    LEFT JOIN
+	        RESTAURANT_IMAGE I ON R.REVIEW_ID = I.REVIEW_ID AND I.IMG_TYPE = 'REVIEW'
+	    WHERE
+	        R.RESTAURANT_ID = #{restaurantId} AND M.STATUS = 'Y'
+	    ORDER BY
+	        R.REGDATE DESC, I.IMAGE_ID ASC
+	</select>
+
+    <!-- 관리자용: 모든 리뷰와 이미지 함께 조회 -->
+    <select id="selectAllReviewsWithImages" resultMap="reviewWithImagesResultMap">
+        SELECT
+            R.REVIEW_ID, R.RESTAURANT_ID, R.MEMBER_ID, R.CONTENT, R.STAR_SCORE, R.REGDATE, M.NICKNAME,
+            I.IMAGE_ID, I.IMAGE_URL, I.IMG_TYPE,
+            RES.NAME AS RESTAURANT_NAME
+        FROM
+            RESTAURANT_REVIEW R
+        JOIN
+            MEMBER M ON R.MEMBER_ID = M.ID
+        JOIN
+            RESTAURANT RES ON R.RESTAURANT_ID = RES.RESTAURANT_ID
+        LEFT JOIN
+            RESTAURANT_IMAGE I ON R.REVIEW_ID = I.REVIEW_ID AND I.IMG_TYPE = 'REVIEW'
+        WHERE M.STATUS = 'Y'
+        ORDER BY
+            R.REGDATE DESC, I.IMAGE_ID ASC
+    </select>
+
+    <!-- 리뷰 ID로 단일 리뷰 정보 조회 -->
+    <select id="selectReviewById" parameterType="int" resultType="kr.ac.kopo.vo.RestaurantReviewVO">
+        SELECT 
+            REVIEW_ID      AS reviewId,
+            RESTAURANT_ID  AS restaurantId,
+            MEMBER_ID      AS memberId,
+            CONTENT        AS content,
+            STAR_SCORE     AS starScore,
+            REGDATE        AS regdate
+        FROM RESTAURANT_REVIEW
+        WHERE REVIEW_ID = #{reviewId}
+    </select>
+
+    <!-- 리뷰 삭제 -->
+    <delete id="deleteReview" parameterType="int">
+        DELETE FROM RESTAURANT_REVIEW
+        WHERE REVIEW_ID = #{reviewId}
+    </delete>
+
+    <!-- 관리자용: 리뷰 총 개수 조회 (검색 기능 포함) -->
+    <select id="selectReviewCountForAdmin" parameterType="map" resultType="int">
+        SELECT COUNT(DISTINCT R.REVIEW_ID)
+        FROM RESTAURANT_REVIEW R
+        JOIN MEMBER M ON R.MEMBER_ID = M.ID
+        JOIN RESTAURANT RES ON R.RESTAURANT_ID = RES.RESTAURANT_ID
+        <where>
+            <if test="keyword != null and keyword != ''">
+                (R.CONTENT LIKE '%' || #{keyword} || '%' OR M.ID LIKE '%' || #{keyword} || '%' OR M.NICKNAME LIKE '%' || #{keyword} || '%' OR RES.NAME LIKE '%' || #{keyword} || '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- 관리자용: 페이징 처리된 리뷰 목록 조회 (안정화 버전) -->
+    <select id="selectReviewsForAdmin" parameterType="map" resultMap="reviewWithImagesResultMap">
+        SELECT
+            T2.REVIEW_ID, T2.RESTAURANT_ID, T2.MEMBER_ID, T2.CONTENT, T2.STAR_SCORE, T2.REGDATE, T2.NICKNAME, T2.RESTAURANT_NAME,
+            I.IMAGE_ID, I.IMAGE_URL, I.IMG_TYPE
+        FROM (
+            -- 1단계: 페이징된 리뷰 10개를 먼저 조회
+            SELECT * FROM (
+                SELECT ROWNUM AS RNUM, T1.* FROM (
+                    SELECT
+                        R.REVIEW_ID, R.RESTAURANT_ID, R.MEMBER_ID, R.CONTENT, R.STAR_SCORE, R.REGDATE, M.NICKNAME,
+                        RES.NAME AS RESTAURANT_NAME
+                    FROM
+                        RESTAURANT_REVIEW R
+                    JOIN
+                        MEMBER M ON R.MEMBER_ID = M.ID
+                    JOIN
+                        RESTAURANT RES ON R.RESTAURANT_ID = RES.RESTAURANT_ID
+                    <where>
+                        <if test="keyword != null and keyword != ''">
+                            (R.CONTENT LIKE '%' || #{keyword} || '%' OR M.ID LIKE '%' || #{keyword} || '%' OR M.NICKNAME LIKE '%' || #{keyword} || '%' OR RES.NAME LIKE '%' || #{keyword} || '%')
+                        </if>
+                    </where>
+                    ORDER BY R.REGDATE DESC
+                ) T1
+            ) T2 WHERE RNUM BETWEEN #{start} AND #{end}
+        ) T2
+        -- 2단계: 1단계 결과에 이미지를 JOIN
+        LEFT JOIN RESTAURANT_IMAGE I ON T2.REVIEW_ID = I.REVIEW_ID AND I.IMG_TYPE = 'REVIEW'
+        -- 3단계: 데이터 연속성을 위한 정렬
+        ORDER BY T2.REGDATE DESC, I.IMAGE_ID ASC
+    </select>
+
+    <!-- 특정 회원이 작성한 리뷰 조회 (페이지네이션) -->
+    <select id="selectReviewsByMemberId" resultMap="reviewWithImagesResultMap">
+        SELECT
+            R.REVIEW_ID, R.RESTAURANT_ID, R.MEMBER_ID, R.CONTENT, R.STAR_SCORE, R.REGDATE,
+            RES.NAME AS RESTAURANT_NAME
+        FROM
+            RESTAURANT_REVIEW R
+        JOIN
+            RESTAURANT RES ON R.RESTAURANT_ID = RES.RESTAURANT_ID
+        WHERE
+            R.MEMBER_ID = #{memberId}
+        ORDER BY
+            R.REGDATE DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{limit} ROWS ONLY
+    </select>
+
+    <!-- 특정 회원이 작성한 모든 리뷰 조회 -->
+    <select id="selectAllReviewsByMemberId" parameterType="string" resultMap="reviewWithImagesResultMap">
+        SELECT
+            R.REVIEW_ID, R.RESTAURANT_ID, R.MEMBER_ID, R.CONTENT, R.STAR_SCORE, R.REGDATE,
+            RES.NAME AS RESTAURANT_NAME
+        FROM
+            RESTAURANT_REVIEW R
+        JOIN
+            RESTAURANT RES ON R.RESTAURANT_ID = RES.RESTAURANT_ID
+        WHERE
+            R.MEMBER_ID = #{memberId}
+        ORDER BY
+            R.REGDATE DESC
+    </select>
+
+    <!-- 특정 회원이 작성한 리뷰 총 개수 -->
+    <select id="selectReviewCountByMemberId" parameterType="string" resultType="int">
+        SELECT COUNT(*)
+        FROM RESTAURANT_REVIEW
+        WHERE MEMBER_ID = #{memberId}
+    </select>
+
+    <!-- 회원 상세 페이지용: 특정 회원이 작성한 리뷰 총 개수 -->
+    <select id="selectReviewCountByUserId" parameterType="string" resultType="int">
+        SELECT COUNT(*)
+        FROM RESTAURANT_REVIEW
+        WHERE MEMBER_ID = #{id}
+    </select>
+
+    <!-- 회원 상세 페이지용: 특정 회원이 작성한 리뷰 목록 (페이징) -->
+    <select id="selectReviewsByUserId" parameterType="map" resultMap="reviewWithImagesResultMap">
+        SELECT
+            T2.REVIEW_ID, T2.RESTAURANT_ID, T2.MEMBER_ID, T2.CONTENT, T2.STAR_SCORE, T2.REGDATE, T2.NICKNAME, T2.RESTAURANT_NAME,
+            I.IMAGE_ID, I.IMAGE_URL, I.IMG_TYPE
+        FROM (
+            SELECT * FROM (
+                SELECT ROWNUM AS RNUM, T1.* FROM (
+                    SELECT
+                        R.REVIEW_ID           AS REVIEW_ID,
+                        R.RESTAURANT_ID       AS RESTAURANT_ID,
+                        R.MEMBER_ID           AS MEMBER_ID,
+                        R.CONTENT             AS CONTENT,
+                        R.STAR_SCORE          AS STAR_SCORE,
+                        R.REGDATE             AS REGDATE,
+                        M.NICKNAME            AS NICKNAME,
+                        RES.NAME              AS RESTAURANT_NAME
+                    FROM
+                        RESTAURANT_REVIEW R
+                    JOIN
+                        MEMBER M ON R.MEMBER_ID = M.ID
+                    JOIN
+                        RESTAURANT RES ON R.RESTAURANT_ID = RES.RESTAURANT_ID
+                    WHERE
+                        R.MEMBER_ID = #{id} -- 특정 사용자 필터링
+                    ORDER BY R.REGDATE DESC
+                ) T1
+            ) T2 WHERE RNUM BETWEEN #{start} AND #{end}
+        ) T2
+        LEFT JOIN RESTAURANT_IMAGE I ON T2.REVIEW_ID = I.REVIEW_ID AND I.IMG_TYPE = 'REVIEW'
+        ORDER BY T2.REGDATE DESC, I.IMAGE_ID ASC
+    </select>
+
+    <!-- =================================================================== -->
+    <!-- 통계용 쿼리                                                          -->
+    <!-- =================================================================== -->
+
+    <!-- 리뷰 요약 통계 (총 리뷰 수, 평균 별점, 포토 리뷰 수) -->
+    <select id="selectReviewStatistics" resultType="map">
+        SELECT
+            (SELECT COUNT(*) FROM RESTAURANT_REVIEW) AS totalReviews,
+            (SELECT NVL(AVG(STAR_SCORE), 0) FROM RESTAURANT_REVIEW) AS averageRating,
+            (SELECT COUNT(DISTINCT REVIEW_ID) FROM RESTAURANT_IMAGE WHERE IMG_TYPE = 'REVIEW') AS photoReviewCount
+        FROM DUAL
+    </select>
+
+    <!-- 기간별 신규 리뷰 등록 추이 (일별, 주별, 월별) -->
+    <select id="selectNewReviewCountByPeriod" parameterType="string" resultType="map">
+        SELECT
+        <choose>
+            <when test='_parameter == "daily"'>
+                TO_CHAR(REGDATE, 'YYYY-MM-DD') AS "period",
+            </when>
+            <when test='_parameter == "weekly"'>
+                TO_CHAR(REGDATE, 'YYYY-WW') AS "period",
+            </when>
+            <when test='_parameter == "monthly"'>
+                TO_CHAR(REGDATE, 'YYYY-MM') AS "period",
+            </when>
+        </choose>
+        COUNT(*) AS "count"
+        FROM RESTAURANT_REVIEW
+        GROUP BY
+        <choose>
+            <when test='_parameter == "daily"'>
+                TO_CHAR(REGDATE, 'YYYY-MM-DD')
+            </when>
+            <when test='_parameter == "weekly"'>
+                TO_CHAR(REGDATE, 'YYYY-WW')
+            </when>
+            <when test='_parameter == "monthly"'>
+                TO_CHAR(REGDATE, 'YYYY-MM')
+            </when>
+        </choose>
+        ORDER BY "period" ASC
+    </select>
+
+    <!-- 별점 분포 (1점 ~ 5점) -->
+    <select id="selectRatingDistribution" resultType="map">
+        SELECT
+            STAR_SCORE AS "rating",
+            COUNT(*)   AS "count"
+        FROM RESTAURANT_REVIEW
+        GROUP BY STAR_SCORE
+        ORDER BY STAR_SCORE ASC
+    </select>
+
+    <!-- 특정 맛집의 평점 및 리뷰 수 계산 (활성 사용자만 대상) -->
+    <select id="calculateRating" parameterType="int" resultType="map">
+        SELECT
+            NVL(AVG(R.STAR_SCORE), 0) AS "starScore",
+            COUNT(R.REVIEW_ID)       AS "reviewCount"
+        FROM RESTAURANT_REVIEW R
+        JOIN MEMBER M ON R.MEMBER_ID = M.ID
+        WHERE R.RESTAURANT_ID = #{restaurantId}
+          AND M.STATUS = 'Y'
+    </select>
+</mapper>

@@ -1,0 +1,434 @@
+/*
+-- 트리거 삭제
+DROP TRIGGER TRG_TAG_ID;
+DROP TRIGGER TRG_MENU_ID;
+DROP TRIGGER TRG_IMAGE_ID;
+DROP TRIGGER TRG_RESTAURANT_ID;
+
+-- 시퀀스 삭제
+DROP SEQUENCE RESTAURANT_TAG_SEQ;
+DROP SEQUENCE RESTAURANT_MENU_SEQ;
+DROP SEQUENCE RESTAURANT_IMAGE_SEQ;
+DROP SEQUENCE RESTAURANT_SEQ;
+
+-- 테이블 삭제 (제약조건 무시)
+DROP TABLE RESTAURANT_TAG CASCADE CONSTRAINTS;
+DROP TABLE RESTAURANT_MENU CASCADE CONSTRAINTS;
+DROP TABLE RESTAURANT_IMAGE CASCADE CONSTRAINTS;
+DROP TABLE RESTAURANT CASCADE CONSTRAINTS;
+DROP TABLE MEMBER CASCADE CONSTRAINTS;
+
+-- 휴지통 비우기
+PURGE RECYCLEBIN;
+*/
+
+CREATE TABLE MEMBER (
+    ID         VARCHAR2(50) PRIMARY KEY,
+    PASSWORD   VARCHAR2(100) NOT NULL, -- SHA-256 암호화 저장
+    NICKNAME   VARCHAR2(50) NOT NULL,
+    EMAIL      VARCHAR2(100),
+    REGDATE    DATE DEFAULT SYSDATE,
+    STATUS     CHAR(1) DEFAULT 'Y' CHECK (STATUS IN ('Y', 'N')),
+    TYPE       VARCHAR2(10) DEFAULT 'USER' CHECK (TYPE IN ('USER', 'ADMIN'))
+);
+
+------------------------------------------------------------------------------------------------------
+CREATE TABLE RESTAURANT (
+    RESTAURANT_ID     NUMBER PRIMARY KEY,           -- 가게 고유 ID
+    NAME              VARCHAR2(100) NOT NULL,       -- 가게 이름
+    REGION            VARCHAR2(50),                 -- 지역
+    CATEGORY          VARCHAR2(50),                 -- 카테고리 (한식, 중식 등)
+    STAR_PERCENT      NUMBER(3),                    -- 별점 (퍼센트)
+    STAR_SCORE        NUMBER(2,1),                  -- 평점 (예: 4.3)
+    REVIEW_COUNT      NUMBER,                       -- 평가 수
+    MZ_SCORE          NUMBER(4, 1),                 -- 자체 산정 MZ스코어 (100점 만점, 소수점 첫째 자리)
+    ADDRESS           VARCHAR2(200),                -- 주소
+    PHONE             VARCHAR2(20),                 -- 전화번호
+    MAIN_IMG_URL1     VARCHAR2(300),                -- 대표 이미지1
+    MAIN_IMG_URL2     VARCHAR2(300),                -- 대표 이미지2
+    STATUS            CHAR(1) DEFAULT 'Y' NOT NULL, -- 활성화/비활성화
+    REGDATE           DATE DEFAULT SYSDATE         
+);
+
+CREATE SEQUENCE RESTAURANT_SEQ
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+CREATE OR REPLACE TRIGGER TRG_RESTAURANT_ID
+BEFORE INSERT ON RESTAURANT
+FOR EACH ROW
+BEGIN
+    :NEW.RESTAURANT_ID := RESTAURANT_SEQ.NEXTVAL;
+END;
+/
+------------------------------------------------------------------------------------------------------
+CREATE TABLE RESTAURANT_TAG (
+    TAG_ID         NUMBER PRIMARY KEY,
+    RESTAURANT_ID  NUMBER NOT NULL,
+    TAG_NAME       VARCHAR2(100),
+    TAG_TYPE       VARCHAR2(10) CHECK (TAG_TYPE IN ('MAIN', 'SUB')) NOT NULL,
+    CONSTRAINT FK_TAG_RESTAURANT
+        FOREIGN KEY (RESTAURANT_ID)
+        REFERENCES RESTAURANT(RESTAURANT_ID)
+);
+-- 시퀀스
+CREATE SEQUENCE RESTAURANT_TAG_SEQ
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+-- 트리거
+CREATE OR REPLACE TRIGGER TRG_TAG_ID
+BEFORE INSERT ON RESTAURANT_TAG
+FOR EACH ROW
+BEGIN
+    :NEW.TAG_ID := RESTAURANT_TAG_SEQ.NEXTVAL;
+END;
+/
+------------------------------------------------------------------------------------------------------
+CREATE TABLE RESTAURANT_MENU (
+    MENU_ID        NUMBER PRIMARY KEY,
+    RESTAURANT_ID  NUMBER NOT NULL,
+    MENU_NAME      VARCHAR2(150) NOT NULL,
+    PRICE          NUMBER, -- 가격은 선택사항일 수도 있으므로 NULL 허용
+    CONSTRAINT FK_MENU_RESTAURANT
+        FOREIGN KEY (RESTAURANT_ID)
+        REFERENCES RESTAURANT(RESTAURANT_ID)
+);
+-- 시퀀스
+CREATE SEQUENCE RESTAURANT_MENU_SEQ
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+-- 트리거
+CREATE OR REPLACE TRIGGER TRG_MENU_ID
+BEFORE INSERT ON RESTAURANT_MENU
+FOR EACH ROW
+BEGIN
+    :NEW.MENU_ID := RESTAURANT_MENU_SEQ.NEXTVAL;
+END;
+/
+------------------------------------------------------------------------------------------------------
+
+-- =================================================================
+-- RESTAURANT_IMAGE 테이블: 맛집의 기본 이미지와 리뷰 이미지를 모두 관리
+-- =================================================================
+
+-- 기존 테이블이 있다면 삭제
+-- DROP TABLE RESTAURANT_IMAGE;
+-- DROP SEQUENCE RESTAURANT_IMAGE_SEQ;
+
+-- 1. 테이블 생성
+CREATE TABLE RESTAURANT_IMAGE (
+    IMAGE_ID        NUMBER          PRIMARY KEY,
+    RESTAURANT_ID   NUMBER          NOT NULL,
+    IMAGE_URL       VARCHAR2(300)   NOT NULL,
+    IMG_TYPE        VARCHAR2(10)    NOT NULL,           -- 이미지 타입 ('BASIC', 'REVIEW')
+    REVIEW_ID       NUMBER          NULL,               -- IMG_TYPE이 'REVIEW'일 때 리뷰 ID 연결
+    MEMBER_ID       VARCHAR2(50)    NULL,               -- IMG_TYPE이 'REVIEW'일 때 작성자 ID 연결
+    REGDATE         DATE            DEFAULT SYSDATE NOT NULL,
+
+    -- 제약 조건 (Constraints)
+    -- RESTAURANT 테이블의 RESTAURANT_ID를 참조하는 외래 키
+    CONSTRAINT FK_IMAGE_RESTAURANT
+        FOREIGN KEY (RESTAURANT_ID)
+        REFERENCES RESTAURANT(RESTAURANT_ID)
+        ON DELETE CASCADE, -- 맛집이 삭제되면 관련 이미지도 함께 삭제
+
+    -- IMG_TYPE 컬럼은 'BASIC' 또는 'REVIEW' 값만 허용
+    CONSTRAINT CHK_IMG_TYPE
+        CHECK (IMG_TYPE IN ('BASIC', 'REVIEW')),
+
+    -- IMG_TYPE에 따른 컬럼 값 조건
+    -- 'BASIC' 타입일 경우, REVIEW_ID와 MEMBER_ID는 반드시 NULL이어야 함
+    -- 'REVIEW' 타입일 경우, REVIEW_ID와 MEMBER_ID는 반드시 값이 있어야 함 (NOT NULL)
+    CONSTRAINT CHK_IMAGE_CONDITIONS
+        CHECK (
+            (IMG_TYPE = 'BASIC' AND REVIEW_ID IS NULL AND MEMBER_ID IS NULL) OR
+            (IMG_TYPE = 'REVIEW' AND REVIEW_ID IS NOT NULL AND MEMBER_ID IS NOT NULL)
+        )
+);
+
+-- 테이블 및 컬럼 주석 추가
+COMMENT ON TABLE  RESTAURANT_IMAGE IS '맛집의 기본 및 리뷰 이미지 정보';
+COMMENT ON COLUMN RESTAURANT_IMAGE.IMAGE_ID IS '이미지 고유 ID (PK)';
+COMMENT ON COLUMN RESTAURANT_IMAGE.RESTAURANT_ID IS '맛집 ID (FK)';
+COMMENT ON COLUMN RESTAURANT_IMAGE.IMAGE_URL IS '이미지 경로 또는 URL';
+COMMENT ON COLUMN RESTAURANT_IMAGE.IMG_TYPE IS '이미지 타입 (BASIC: 기본, REVIEW: 리뷰)';
+COMMENT ON COLUMN RESTAURANT_IMAGE.REVIEW_ID IS '리뷰 ID (리뷰 이미지인 경우)';
+COMMENT ON COLUMN RESTAURANT_IMAGE.MEMBER_ID IS '이미지 업로더 ID (리뷰 작성자 등)';
+COMMENT ON COLUMN RESTAURANT_IMAGE.REGDATE IS '이미지 등록일';
+
+
+-- 2. 시퀀스 생성 (IMAGE_ID 자동 증가)
+CREATE SEQUENCE RESTAURANT_IMAGE_SEQ
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+
+-- 3. 트리거 생성 (INSERT 시 시퀀스를 이용해 IMAGE_ID 자동 할당)
+CREATE OR REPLACE TRIGGER TRG_IMAGE_ID
+BEFORE INSERT ON RESTAURANT_IMAGE
+FOR EACH ROW
+BEGIN
+    -- :NEW.IMAGE_ID가 NULL일 경우에만 시퀀스에서 새로운 값을 할당
+    IF :NEW.IMAGE_ID IS NULL THEN
+        :NEW.IMAGE_ID := RESTAURANT_IMAGE_SEQ.NEXTVAL;
+    END IF;
+END;
+/
+
+
+------------------------------------------------------------------------------------------------------
+CREATE TABLE FAVORITE_RESTAURANT (
+    FAVORITE_ID     NUMBER PRIMARY KEY,
+    MEMBER_ID       VARCHAR2(50) NOT NULL,
+    RESTAURANT_ID   NUMBER NOT NULL,
+    REGDATE         DATE DEFAULT SYSDATE,
+    CONSTRAINT FK_FAV_MEMBER FOREIGN KEY (MEMBER_ID) REFERENCES MEMBER(ID),
+    CONSTRAINT FK_FAV_RESTAURANT FOREIGN KEY (RESTAURANT_ID) REFERENCES RESTAURANT(RESTAURANT_ID),
+    CONSTRAINT UK_FAV_MEMBER_REST UNIQUE (MEMBER_ID, RESTAURANT_ID)
+);
+
+CREATE SEQUENCE FAVORITE_RESTAURANT_SEQ NOCACHE NOCYCLE;
+
+CREATE OR REPLACE TRIGGER TRG_FAVORITE_ID
+BEFORE INSERT ON FAVORITE_RESTAURANT
+FOR EACH ROW
+BEGIN
+  :NEW.FAVORITE_ID := FAVORITE_RESTAURANT_SEQ.NEXTVAL;
+END;
+/
+
+------------------------------------------------------------------------------------------------------
+/*
+-- 트리거 삭제
+DROP TRIGGER TRG_REVIEW_ID;
+
+-- 시퀀스 삭제
+DROP SEQUENCE RESTAURANT_REVIEW_SEQ;
+
+-- 테이블 삭제 (제약조건 무시)
+DROP TABLE RESTAURANT_REVIEW CASCADE CONSTRAINTS;
+
+-- 휴지통 비우기
+PURGE RECYCLEBIN;
+*/
+
+CREATE TABLE RESTAURANT_REVIEW (
+    REVIEW_ID      NUMBER PRIMARY KEY,
+    RESTAURANT_ID  NUMBER NOT NULL,
+    MEMBER_ID      VARCHAR2(50) NOT NULL,
+    CONTENT        VARCHAR2(1000) NOT NULL,
+    STAR_SCORE     NUMBER(2,1),                   -- 별점
+    REGDATE        DATE DEFAULT SYSDATE,          -- 등록일
+    CONSTRAINT FK_REVIEW_MEMBER FOREIGN KEY (MEMBER_ID) REFERENCES MEMBER(ID),
+    CONSTRAINT FK_REVIEW_RESTAURANT FOREIGN KEY (RESTAURANT_ID) REFERENCES RESTAURANT(RESTAURANT_ID)
+);
+
+CREATE SEQUENCE RESTAURANT_REVIEW_SEQ NOCACHE NOCYCLE;
+
+CREATE OR REPLACE TRIGGER TRG_REVIEW_ID
+BEFORE INSERT ON RESTAURANT_REVIEW
+FOR EACH ROW
+BEGIN
+  :NEW.REVIEW_ID := RESTAURANT_REVIEW_SEQ.NEXTVAL;
+END;
+
+/
+------------------------------------------------------------------------------------------------------
+-- =================================================================
+-- REVIEW_REPORT 테이블: 리뷰 신고 정보를 관리
+-- =================================================================
+
+-- 기존 테이블 및 시퀀스가 있다면 삭제
+-- DROP TABLE REVIEW_REPORT;
+-- DROP SEQUENCE REVIEW_REPORT_SEQ;
+
+-- 1. 테이블 생성
+CREATE TABLE REVIEW_REPORT (
+    REPORT_ID           NUMBER          PRIMARY KEY,
+    REVIEW_ID           NUMBER          NOT NULL,
+    MEMBER_ID           VARCHAR2(50)    NOT NULL,
+    REPORT_CATEGORY     VARCHAR2(50)    NOT NULL,       -- 신고 분류
+    REPORT_CONTENT      VARCHAR2(1000)  NULL,           -- 상세 내용 (선택)
+    REPORT_DATE         DATE            DEFAULT SYSDATE NOT NULL,
+    STATUS              VARCHAR2(20)    DEFAULT 'PENDING' NOT NULL, -- 처리 상태
+
+    -- 제약 조건 (Constraints)
+    -- 외래 키 설정
+    CONSTRAINT FK_REPORT_REVIEW FOREIGN KEY (REVIEW_ID)
+        REFERENCES RESTAURANT_REVIEW(REVIEW_ID) ON DELETE CASCADE,
+    CONSTRAINT FK_REPORT_MEMBER FOREIGN KEY (MEMBER_ID)
+        REFERENCES MEMBER(ID) ON DELETE CASCADE,
+
+    -- 한 명의 유저가 동일한 리뷰를 중복 신고하는 것을 방지
+    CONSTRAINT UK_REPORT_REVIEW_MEMBER UNIQUE (REVIEW_ID, MEMBER_ID),
+
+    -- 정해진 값만 들어오도록 데이터 무결성 강화
+    CONSTRAINT CHK_REPORT_CATEGORY CHECK (REPORT_CATEGORY IN ('SPAM', 'INAPPROPRIATE', 'ETC')),
+    CONSTRAINT CHK_REPORT_STATUS CHECK (STATUS IN ('PENDING', 'PROCESSED', 'REJECTED'))
+);
+
+-- 테이블 및 컬럼 주석 추가
+COMMENT ON TABLE REVIEW_REPORT IS '리뷰 신고 정보';
+COMMENT ON COLUMN REVIEW_REPORT.REPORT_ID IS '신고 고유 ID (PK)';
+COMMENT ON COLUMN REVIEW_REPORT.REVIEW_ID IS '신고된 리뷰 ID (FK)';
+COMMENT ON COLUMN REVIEW_REPORT.MEMBER_ID IS '신고한 회원 ID (FK)';
+COMMENT ON COLUMN REVIEW_REPORT.REPORT_CATEGORY IS '신고 분류 (SPAM: 스팸, INAPPROPRIATE: 부적절한 내용, ETC: 기타)';
+COMMENT ON COLUMN REVIEW_REPORT.REPORT_CONTENT IS '신고 상세 내용';
+COMMENT ON COLUMN REVIEW_REPORT.REPORT_DATE IS '신고일';
+COMMENT ON COLUMN REVIEW_REPORT.STATUS IS '처리 상태 (PENDING: 대기, PROCESSED: 처리 완료, REJECTED: 반려)';
+
+
+-- 2. 시퀀스 생성 (REPORT_ID 자동 증가)
+CREATE SEQUENCE REVIEW_REPORT_SEQ
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+
+-- 3. 트리거 생성 (INSERT 시 시퀀스를 이용해 REPORT_ID 자동 할당)
+CREATE OR REPLACE TRIGGER TRG_REPORT_ID
+BEFORE INSERT ON REVIEW_REPORT
+FOR EACH ROW
+BEGIN
+    IF :NEW.REPORT_ID IS NULL THEN
+        :NEW.REPORT_ID := REVIEW_REPORT_SEQ.NEXTVAL;
+    END IF;
+END;
+/
+
+
+-- =================================================================
+-- MEMBER_STATUS_LOG 테이블: 회원 상태 변경 이력을 관리
+-- =================================================================
+
+-- 기존 테이블 및 시퀀스가 있다면 삭제
+-- DROP TABLE MEMBER_STATUS_LOG;
+-- DROP SEQUENCE MEMBER_STATUS_LOG_SEQ;
+
+-- 1. 테이블 생성
+CREATE TABLE MEMBER_STATUS_LOG (
+    LOG_ID              NUMBER          PRIMARY KEY,
+    MEMBER_ID           VARCHAR2(50)    NOT NULL,
+    ADMIN_ID            VARCHAR2(50)    NOT NULL,           -- 상태를 변경한 관리자 ID
+    PREVIOUS_STATUS     CHAR(1)         NOT NULL,           -- 변경 전 상태 ('Y', 'N')
+    NEW_STATUS          CHAR(1)         NOT NULL,           -- 변경 후 상태 ('Y', 'N')
+    REASON              VARCHAR2(500)   NOT NULL,           -- 변경 사유
+    LOG_DATE            DATE            DEFAULT SYSDATE NOT NULL,
+
+    -- 제약 조건 (Constraints)
+    -- MEMBER 테이블의 ID를 참조하는 외래 키
+    CONSTRAINT FK_LOG_MEMBER FOREIGN KEY (MEMBER_ID)
+        REFERENCES MEMBER(ID) ON DELETE CASCADE, -- 회원 정보가 삭제되면 관련 로그도 함께 삭제
+
+    -- 상태를 변경한 관리자 또한 MEMBER 테이블의 ID를 참조
+    CONSTRAINT FK_LOG_ADMIN FOREIGN KEY (ADMIN_ID)
+        REFERENCES MEMBER(ID) ON DELETE SET NULL, -- 관리자 계정이 삭제되더라도 로그는 남기기 위해 NULL로 설정
+
+    -- 상태 값은 'Y' 또는 'N'만 허용
+    CONSTRAINT CHK_LOG_PREVIOUS_STATUS CHECK (PREVIOUS_STATUS IN ('Y', 'N')),
+    CONSTRAINT CHK_LOG_NEW_STATUS CHECK (NEW_STATUS IN ('Y', 'N'))
+);
+
+-- 테이블 및 컬럼 주석 추가
+COMMENT ON TABLE MEMBER_STATUS_LOG IS '회원 상태 변경 이력 정보';
+COMMENT ON COLUMN MEMBER_STATUS_LOG.LOG_ID IS '로그 고유 ID (PK)';
+COMMENT ON COLUMN MEMBER_STATUS_LOG.MEMBER_ID IS '상태가 변경된 회원 ID (FK)';
+COMMENT ON COLUMN MEMBER_STATUS_LOG.ADMIN_ID IS '상태를 변경한 관리자 ID (FK)';
+COMMENT ON COLUMN MEMBER_STATUS_LOG.PREVIOUS_STATUS IS '변경 전 상태 (Y: 활성, N: 비활성)';
+COMMENT ON COLUMN MEMBER_STATUS_LOG.NEW_STATUS IS '변경 후 상태 (Y: 활성, N: 비활성)';
+COMMENT ON COLUMN MEMBER_STATUS_LOG.REASON IS '상태 변경 사유';
+COMMENT ON COLUMN MEMBER_STATUS_LOG.LOG_DATE IS '변경 기록일';
+
+
+-- 2. 시퀀스 생성 (LOG_ID 자동 증가)
+CREATE SEQUENCE MEMBER_STATUS_LOG_SEQ
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+
+-- 3. 트리거 생성 (INSERT 시 시퀀스를 이용해 LOG_ID 자동 할당)
+CREATE OR REPLACE TRIGGER TRG_MEMBER_STATUS_LOG_ID
+BEFORE INSERT ON MEMBER_STATUS_LOG
+FOR EACH ROW
+BEGIN
+    IF :NEW.LOG_ID IS NULL THEN
+        :NEW.LOG_ID := MEMBER_STATUS_LOG_SEQ.NEXTVAL;
+    END IF;
+END;
+/
+
+
+------------------------------------------------------------------------------------------------------
+-- 레스토랑 테이블의 별점, 별점 퍼센트, 리뷰 카운트 업데이트
+MERGE INTO RESTAURANT r
+USING (
+  SELECT 
+    RESTAURANT_ID,
+    ROUND(AVG(STAR_SCORE), 1) AS AVG_SCORE,
+    COUNT(*) AS REVIEW_CNT,
+    ROUND(AVG(STAR_SCORE) / 5 * 100) AS STAR_PCT
+  FROM RESTAURANT_REVIEW
+  GROUP BY RESTAURANT_ID
+) rev
+ON (r.RESTAURANT_ID = rev.RESTAURANT_ID)
+WHEN MATCHED THEN
+  UPDATE SET
+    r.STAR_SCORE    = rev.AVG_SCORE,
+    r.REVIEW_COUNT  = rev.REVIEW_CNT,
+    r.STAR_PERCENT  = rev.STAR_PCT;
+
+        
+------------------------------------------------------------------------------------------------------
+-- 리뷰 테이블의 리뷰 점수 분포 조정
+-- 균등 분포
+UPDATE RESTAURANT_REVIEW
+SET STAR_SCORE = (MOD(ABS(DBMS_RANDOM.RANDOM), 10) + 1) * 0.5;
+-- 정규 분포
+DECLARE
+  z NUMBER;
+  raw_score NUMBER;
+  rounded_score NUMBER;
+BEGIN
+  FOR r IN (
+    SELECT ROWID AS rid FROM RESTAURANT_REVIEW
+  ) LOOP
+
+    LOOP
+      -- 정규분포 생성
+      z := SQRT(-2 * LN(DBMS_RANDOM.VALUE())) * COS(2 * ACOS(-1) * DBMS_RANDOM.VALUE());
+      raw_score := 3.5 + z * 1.2; -- 평균 3.5, 표준편차 1.2
+      rounded_score := ROUND(raw_score * 2) / 2;
+
+      -- 범위 안에 들면 break
+      EXIT WHEN rounded_score BETWEEN 0.5 AND 5.0;
+      -- 아니면 다시 LOOP
+    END LOOP;
+
+    UPDATE RESTAURANT_REVIEW
+    SET STAR_SCORE = rounded_score
+    WHERE ROWID = r.rid;
+
+  END LOOP;
+END;
+/
+
+-- 분포 확인
+SELECT STAR_SCORE, COUNT(*) 
+FROM RESTAURANT_REVIEW
+GROUP BY STAR_SCORE 
+ORDER BY STAR_SCORE;
+
+

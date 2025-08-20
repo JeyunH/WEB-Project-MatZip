@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans       https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context     https://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/mvc         https://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/tx          https://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/task        http://www.springframework.org/schema/task/spring-task.xsd">
+
+	<!-- 1. 컴포넌트 스캔 -->
+	<context:component-scan
+		base-package="kr.ac.kopo" />
+
+	<!-- 스케줄링 활성화 -->
+	<task:annotation-driven />
+
+
+	<!-- 2. 어노테이션 기반 MVC 설정 -->
+	<mvc:annotation-driven />
+	<mvc:resources mapping="/resources/**"
+		location="/resources/" />
+
+	<!-- 외부 이미지 경로 매핑 -->
+	<mvc:resources mapping="/restaurant_images/basic/**" location="file:///D:/OneDrive_Kopo/matzip_uploads/restaurant_basic_img/" />
+	<mvc:resources mapping="/restaurant_images/**" location="file:///D:/OneDrive_Kopo/matzip_uploads/restaurant_main_img/" />
+	<mvc:resources mapping="/review_images/**" location="file:///D:/OneDrive_Kopo/matzip_uploads/review_img/" />
+
+	<!-- 3. ViewResolver 설정 -->
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/jsp/" />
+		<property name="suffix" value=".jsp" />
+	</bean>
+		
+	<bean id="multipartResolver"
+      class="org.springframework.web.multipart.support.StandardServletMultipartResolver"/>
+
+	<!-- 4. DB Connection Pool 설정 -->
+	<bean id="dataSource"
+		class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="driverClassName"
+			value="oracle.jdbc.OracleDriver" />
+		<property name="url"
+			value="jdbc:oracle:thin:@localhost:1521/XEPDB1" />
+		<property name="username" value="YOUR_DB_USERNAME" />
+		<property name="password" value="YOUR_DB_PASSWORD" />
+	</bean>
+
+
+	<!-- 5. MyBatis SqlSessionFactory 설정 -->
+	<bean id="sqlSessionFactory"
+		class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+
+		<!-- 여기에 추가 -->
+		<property name="typeAliasesPackage"
+			value="kr.ac.kopo.vo" />
+			
+				<!-- camelCase 매핑 활성화 설정 추가 -->
+		<property name="configuration">
+			<bean class="org.apache.ibatis.session.Configuration">
+				<property name="mapUnderscoreToCamelCase" value="true"/>
+			</bean>
+		</property>
+
+		<property name="mapperLocations"
+			value="classpath:mapper/**/*.xml" />
+	</bean>
+
+
+
+	<!-- 6. 매퍼 인터페이스 자동 스캔 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="kr.ac.kopo.dao" />
+	</bean>
+
+	<!-- 7. 트랜잭션 관리자 -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	<tx:annotation-driven
+		transaction-manager="transactionManager" />
+
+	<bean id="testBean"
+		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetObject" ref="sqlSessionFactory" />
+		<property name="targetMethod" value="openSession" />
+	</bean>
+
+    <!-- ▼▼▼▼▼ [수정] 관리자 페이지 인터셉터 설정 ▼▼▼▼▼ -->
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/admin/**"/>
+            <ref bean="adminInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+    <!-- ▲▲▲▲▲ 여기까지 수정 ▲▲▲▲▲ -->
+
+</beans>

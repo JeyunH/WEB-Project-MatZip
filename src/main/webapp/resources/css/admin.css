@@ -1,0 +1,699 @@
+/* =================================================================
+   Admin Common Styles (관리자 페이지 공통 스타일)
+================================================================= */
+
+.center-title {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+.center-description {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.user-table { /* userList, reviewList 공통 테이블 스타일 */
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+    font-size: 0.95rem; /* 결정 사항 1 */
+}
+.user-table th, .user-table td {
+    padding: 12px 15px;
+    border: 1px solid #e0e0e0; /* 결정 사항 2 */
+    text-align: center;
+    vertical-align: middle;
+}
+.user-table thead {
+    background-color: #f8f9fa;
+}
+.user-table th {
+    font-weight: bold; /* 결정 사항 3 */
+    color: #333;
+}
+.user-table tbody tr:hover {
+    background-color: #f1f7ff; /* 결정 사항 4 */
+}
+
+.no-data {
+    padding: 50px;
+    text-align: center;
+    color: #777;
+    font-size: 1.1rem;
+}
+
+.back-link-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* 검색창 스타일 */
+.admin-search-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+.admin-search-form {
+    display: flex;
+    width: 60%; /* 결정 사항 5 */
+    max-width: 500px; /* 결정 사항 5 */
+}
+.admin-search-input {
+    flex-grow: 1;
+    padding: 10px 15px;
+    font-size: 1rem;
+    border: 1px solid #ccc; /* 결정 사항 6 */
+    border-radius: 5px 0 0 5px;
+    outline: none;
+}
+.admin-search-input:focus {
+    border-color: #5c67f2;
+}
+.admin-search-form .btn {
+    border-radius: 0 5px 5px 0;
+    white-space: nowrap;
+}
+
+/* 페이지네이션 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+}
+.pagination a {
+    color: #555;
+    padding: 8px 16px;
+    text-decoration: none;
+    transition: background-color .3s;
+    border: 1px solid #ddd;
+    margin: 0 4px;
+}
+.pagination a.active {
+    background-color: #5c67f2;
+    color: white;
+    border: 1px solid #5c67f2;
+}
+.pagination a:hover:not(.active) {
+    background-color: #ddd;
+}
+
+
+/* =================================================================
+   Dashboard Specific Styles (대시보드 전용)
+================================================================= */
+.admin-dashboard {
+    text-align: center;
+}
+.dashboard-welcome {
+    margin-bottom: 40px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+.admin-menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+}
+.admin-menu-item {
+    display: block;
+    padding: 25px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #333;
+    transition: box-shadow 0.3s, transform 0.3s;
+}
+.admin-menu-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    text-decoration: none;
+}
+.admin-menu-item .fa {
+    font-size: 3rem;
+    color: #5c67f2;
+    margin-bottom: 15px;
+}
+.admin-menu-item h4 {
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    color: #2c3e50;
+}
+.admin-menu-item p {
+    font-size: 0.95rem;
+    color: #666;
+}
+.admin-menu-item.disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+.admin-menu-item.disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* =================================================================
+   UserList Specific Styles (회원 목록 전용)
+================================================================= */
+.status-badge, .type-badge {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.85em;
+    font-weight: bold;
+    color: white;
+}
+.status-badge.status-active { background-color: #28a745; }
+.status-badge.status-inactive { background-color: #6c757d; }
+.type-badge.type-ADMIN { background-color: #dc3545; }
+.type-badge.type-USER { background-color: #5c67f2; }
+
+
+/* =================================================================
+   ReviewList Specific Styles (리뷰 목록 전용)
+================================================================= */
+.review-content {
+    text-align: left;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-size: 0.9em;
+    color: #444;
+}
+.review-images .thumbnail {
+    width: 45px;
+    height: 45px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin: 2px;
+    border: 1px solid #ddd;
+    transition: transform 0.2s ease-in-out;
+    cursor: pointer;
+}
+.review-images .thumbnail:hover {
+    transform: scale(1.1);
+    z-index: 10;
+}
+.review-images .no-image {
+    color: #aaa;
+    font-size: 0.85em;
+}
+td a {
+    color: #5c67f2;
+    text-decoration: none;
+}
+td a:hover {
+    text-decoration: underline;
+}
+
+/* 별점 표시 스타일 */
+.star-rating-display {
+    position: relative;
+    display: inline-block;
+    font-size: 1.1em;
+}
+.star-rating-base {
+    color: #ddd;
+    z-index: 0;
+}
+.star-rating-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    color: #ffc107;
+    z-index: 1;
+}
+.star-score-text {
+    font-size: 0.85em;
+    color: #888;
+    margin-left: 5px;
+}
+
+/* 이미지 확대 모달 스타일 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    justify-content: center;
+    align-items: center;
+}
+.modal.active {
+    display: flex;
+}
+.modal-content {
+    max-width: 90%;
+    max-height: 90%;
+    text-align: center;
+}
+#modalImg {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+.modal-close {
+    position: absolute;
+    top: 20px;
+    right: 40px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+.modal-close:hover {
+    color: #bbb;
+}
+.modal-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: none;
+    padding: 16px;
+    font-size: 30px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+.modal-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+.modal-button.left {
+    left: 20px;
+}
+.modal-button.right {
+    right: 20px;
+}
+
+/* =================================================================
+   Admin Filter Styles (관리자 페이지 필터)
+================================================================= */
+.admin-filter-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px; /* 테이블과의 간격 */
+    gap: 10px; /* 버튼 사이의 간격 */
+}
+.filter-btn {
+    background-color: #f0f0f0;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s;
+    color: #333;
+}
+.filter-btn:hover {
+    background-color: #e0e0e0;
+}
+.filter-btn.active {
+    background-color: #5c67f2;
+    color: white;
+    font-weight: bold;
+}
+
+/* =================================================================
+   UserDetail Specific Styles (회원 상세 정보 전용)
+================================================================= */
+.detail-section {
+    margin-bottom: 40px;
+}
+.section-title {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #c2c8f9;
+}
+.detail-view-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.detail-view-table th, .detail-view-table td {
+    padding: 15px 20px;
+    border-bottom: 1px solid #f0f0f0;
+}
+.detail-view-table th {
+    width: 20%;
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #555;
+    text-align: left;
+}
+.detail-view-table td {
+    width: 80%;
+    color: #333;
+}
+.detail-view-table tr:last-child th,
+.detail-view-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* =================================================================
+   UserDetail Tab Styles (회원 상세 탭 스타일)
+================================================================= */
+.nav-tabs {
+    display: flex;
+    border-bottom: 2px solid #e0e0e0;
+    margin-bottom: 25px;
+    list-style: none; /* 리스트 기본 스타일(점) 제거 */
+    padding-left: 0; /* 리스트 기본 패딩 제거 */
+}
+
+.nav-tabs .nav-item {
+    flex-grow: 1; /* 탭 버튼이 가능한 공간을 균등하게 차지 */
+    text-align: center; /* 텍스트 중앙 정렬 */
+}
+
+.nav-tabs .nav-link {
+    width: 100%;
+    border: none;
+    background-color: transparent;
+    padding: 15px 10px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px; /* 하단 경계선과 겹치도록 */
+}
+
+.nav-tabs .nav-link:hover {
+    color: #333;
+}
+
+.nav-tabs .nav-link.active {
+    color: #5c67f2;
+    font-weight: 600;
+    border-bottom-color: #5c67f2;
+}
+
+.count-badge {
+    display: inline-block;
+    background-color: #e0e0e0;
+    color: #555;
+    font-size: 0.85rem;
+    padding: 4px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link.active .count-badge {
+    background-color: #5c67f2;
+    color: #fff;
+}
+
+.tab-content .tab-pane {
+    display: none;
+}
+
+.tab-content .tab-pane.active {
+    display: block;
+}
+
+.tab-content .table-container {
+    margin-top: 0;
+}
+
+/* 통계 페이지 탭 */
+.tabs {
+    overflow: hidden;
+    border-bottom: 2px solid #eee;
+    margin-bottom: 20px;
+}
+
+.tab-link {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 20px;
+    transition: 0.3s;
+    font-size: 1.1em;
+    font-weight: 500;
+    color: #555;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-link:hover {
+    background-color: #f1f1f1;
+}
+
+.tab-link.active {
+    background-color: #fff;
+    color: #5c67f2;
+    border-bottom: 2px solid #5c67f2;
+}
+
+.tab-content {
+    padding: 6px 12px;
+    border-top: none;
+}
+
+/* 통계 섹션 스타일 */
+.stat-section {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+}
+.stat-section h3 {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #eee;
+    color: #333;
+}
+.stat-section h3 i {
+    margin-right: 10px;
+    color: #5c67f2;
+}
+
+/* 기본 통계 그리드 */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+.stat-item {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+.stat-item h4 {
+    font-size: 1.1em;
+    color: #555;
+    margin-bottom: 10px;
+}
+.stat-item p {
+    font-size: 2em;
+    font-weight: bold;
+    color: #5c67f2;
+    margin-bottom: 5px; /* 비율 표시를 위한 마진 조정 */
+}
+
+.stat-percentage {
+    font-size: 1em;
+    color: #777;
+}
+
+/* 차트 관련 스타일 */
+.chart-controls {
+    margin-bottom: 20px;
+    text-align: center;
+}
+.chart-tab-btn, .chart-tab-btn-resto, .chart-tab-btn-review {
+    background-color: #f0f0f0;
+    border: none;
+    padding: 10px 20px;
+    margin: 0 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s;
+}
+.chart-tab-btn:hover, .chart-tab-btn-resto:hover, .chart-tab-btn-review:hover {
+    background-color: #e0e0e0;
+}
+.chart-tab-btn.active, .chart-tab-btn-resto.active, .chart-tab-btn-review.active {
+    background-color: #5c67f2;
+    color: white;
+}
+.chart-container {
+    position: relative;
+    height: 400px; /* 차트 높이 지정 */
+}
+
+/* 랭킹 관련 스타일 */
+.ranking-controls {
+    margin-bottom: 20px;
+    text-align: center;
+}
+.ranking-tab-btn, .ranking-tab-btn-resto {
+    background-color: #f0f0f0;
+    border: none;
+    padding: 10px 20px;
+    margin: 0 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s;
+}
+.ranking-tab-btn:hover, .ranking-tab-btn-resto:hover {
+    background-color: #e0e0e0;
+}
+.ranking-tab-btn.active, .ranking-tab-btn-resto.active {
+    background-color: #5c67f2;
+    color: white;
+}
+.ranking-table-container {
+    margin-top: 10px;
+}
+.ranking-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+.ranking-table th, .ranking-table td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+.ranking-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+.ranking-table tbody tr:hover {
+    background-color: #f1f3f5;
+}
+.ranking-table td a {
+    color: #5c67f2;
+    text-decoration: none;
+    font-weight: 500;
+}
+.ranking-table td a:hover {
+    text-decoration: underline;
+}
+
+/* 플레이스홀더 스타일 */
+.statistics-placeholder {
+    text-align: center;
+    padding: 60px 40px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+.statistics-placeholder i {
+    font-size: 4em;
+    color: #ccc;
+}
+.statistics-placeholder h3 {
+    font-size: 1.8em;
+    color: #555;
+    margin-top: 20px;
+}
+.statistics-placeholder p {
+    font-size: 1.1em;
+    color: #777;
+}
+
+/* =================================================================
+   ReportList Specific Styles (신고 목록 전용)
+================================================================= */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+    font-size: 0.95rem;
+    table-layout: fixed; /* 테이블 레이아웃 고정 */
+}
+.admin-table th, .admin-table td {
+    padding: 12px 15px;
+    border: 1px solid #e0e0e0;
+    text-align: center;
+    vertical-align: middle;
+    word-break: break-word; /* 단어 단위로 줄바꿈 */
+    box-sizing: border-box; /* 패딩, 테두리를 너비에 포함 */
+}
+.admin-table thead {
+    background-color: #f8f9fa;
+}
+.admin-table th {
+    font-weight: bold;
+    color: #333;
+}
+.admin-table tbody tr:hover {
+    background-color: #f1f7ff;
+}
+
+/* 컬럼 너비 조정 (8개 컬럼 합 100%) */
+.admin-table th:nth-child(1) { width: 7%; }  /* 신고 ID */
+.admin-table th:nth-child(2) { width: 30%; } /* 신고 사유 */
+.admin-table th:nth-child(3) { width: 7%; }  /* 리뷰 ID */
+.admin-table th:nth-child(4) { width: 13%; } /* 신고자 */
+.admin-table th:nth-child(5) { width: 10%; } /* 신고 분류 */
+.admin-table th:nth-child(6) { width: 13%; } /* 신고일 */
+.admin-table th:nth-child(7) { width: 8%; }  /* 상태 */
+.admin-table th:nth-child(8) { width: 12%; } /* 관리 */
+
+
+.badge {
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 0.85em;
+    font-weight: bold;
+    color: white;
+    display: inline-block;
+    text-transform: uppercase;
+}
+
+/* 신고 분류 배지 */
+.badge.category-SPAM { background-color: #6c757d; } /* 스팸 */
+.badge.category-INAPPROPRIATE { background-color: #dc3545; } /* 부적절(욕설/비방) */
+.badge.category-ETC { background-color: #17a2b8; } /* 기타 */
+
+
+/* 신고 상태 배지 */
+.badge.status-PENDING { background-color: #ffc107; color: #333; } /* 대기 */
+.badge.status-PROCESSED { background-color: #28a745; } /* 처리 완료 */
+.badge.status-REJECTED { background-color: #6c757d; } /* 반려 */
+
+/* 신고 내용(사유) 스타일 */
+.admin-table .review-content {
+    text-align: left;
+    white-space: normal; /* 여러 줄로 표시 */
+}
+
+/* 리뷰 ID 링크 스타일 */
+.admin-table td a {
+    color: #5c67f2;
+    text-decoration: none;
+    font-weight: 500;
+}
+.admin-table td a:hover {
+    text-decoration: underline;
+}
