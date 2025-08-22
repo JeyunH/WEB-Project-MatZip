@@ -24,7 +24,7 @@
 ## 2. 기능 명세서
 
 <div align="center">
-  <img src="./etc/Functional Specification250822.png" alt="intro" width="800px" />
+  <img src="./etc/Functional Specification250822.png" alt="FuncSpec" width="800px" />
 </div>
 
 <br>
