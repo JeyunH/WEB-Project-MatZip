@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./etc/banner.png" alt="banner" width="400px" />
+  <img src="./etc/banner.png" alt="banner" width="600px" />
   <br />
   <h2> 맛있는 순간을 찾다, MatZip(맛집)</h2>
   <img src="./etc/intro200.gif" alt="intro" width="800px" />
@@ -7,7 +7,7 @@
 
 ## 1. 프로젝트 개요
 
-**MatZip**은 직관적인 UI로 맛집을 탐색하여 정보를 확인할 수 있고, 자신의 미식 경험을 다른 사람들과 공유할 수 있는 **맛집 추천 및 리뷰 커뮤니티 웹 서비스**입니다. 단순한 정보 제공을 넘어, 사용자들이 '맛있는 순간'을 기록하고 연결되는 공간을 만드는 것을 목표로 합니다.
+**MatZip**은 직관적인 UI로 맛집을 탐색하여 정보를 확인할 수 있고, 자신의 미식 경험을 다른 사람들과 공유할 수 있는 **맛집 추천 및 리뷰 커뮤니티 웹 서비스**입니다. 단순한 정보 제공을 넘어, 사용자들이 '맛있는 순간'을 기록하고 연결되는 공간을 만드는 것을 목표로 하였습니다.
 
 <br>
 
@@ -21,7 +21,15 @@
 
 <br>
 
-## 3. 기술 스택 및 아키텍처
+## 2. 기능 명세서
+
+<div align="center">
+  <img src="./etc/Functional Specification250822.png" alt="intro" width="800px" />
+</div>
+
+<br>
+
+## 4. 기술 스택 및 아키텍처
 
 ### Tech Stack
 ![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
@@ -45,7 +53,7 @@
 
 <br>
 
-## 4. 데이터 구축 (Data Construction)
+## 5. 데이터 구축 (Data Construction)
 
 본 프로젝트의 맛집, 리뷰 등 대용량의 초기 데이터는 **Python**을 사용하여 구축되었습니다.
 
@@ -56,7 +64,7 @@
 
 <br>
 
-## 5. 프로젝트 구조
+## 6. 프로젝트 구조
 ```
 MatZip-WEB-Project/
 ├── pom.xml           # Maven 의존성 및 빌드 설정
