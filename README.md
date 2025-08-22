@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./etc/banner.png" alt="banner" width="600px" />
+  <img src="./etc/banner.png" alt="banner" width="500px" />
   <br />
   <h2> 맛있는 순간을 찾다, MatZip(맛집)</h2>
   <img src="./etc/intro200.gif" alt="intro" width="800px" />
@@ -21,7 +21,7 @@
 
 <br>
 
-## 2. 기능 명세서
+## 3. 기능 명세서
 
 <div align="center">
   <img src="./etc/Functional Specification250822.png" alt="FuncSpec" width="800px" />
