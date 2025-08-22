@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="./etc/banner.png" alt="banner" width="500px" />
+  <img src="./etc/banner.png" alt="banner" title="배너" width="500px" />
   <br />
   <h2> 맛있는 순간을 찾다, MatZip(맛집)</h2>
-  <img src="./etc/intro200.gif" alt="intro" width="800px" />
+  <img src="./etc/intro200.gif" alt="intro" tirle="소개영상" width="800px" />
 </div>
 
 ## 1. 프로젝트 개요
@@ -26,7 +26,7 @@
 ## 3. 기능 명세서
 
 <div align="center">
-  <img src="./etc/FunctionalSpecification250822.png" alt="FuncSpec" width="800px" />
+  <img src="./etc/FunctionalSpecification250822.png" alt="FuncSpec" title="기능명세서" width="800px" />
 </div>
 
 <br>
@@ -68,7 +68,7 @@
 <div align="center">
   <h3> ER 다이어그램 </h3>
   <br>
-  <img src="./etc/ERD.png" alt="erd" width="800px" />
+  <img src="./etc/ERD.png" alt="erd" width="800px" title="ERD" border ="1" />
 </div>
 
 <br>
