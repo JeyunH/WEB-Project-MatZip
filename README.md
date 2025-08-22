@@ -68,7 +68,7 @@
 <div align="center">
   <h3> ER 다이어그램 </h3>
   <br>
-  <img src="./etc/ERD.png" alt="erd" width="800px" title="ERD" border ="1" />
+  <img src="./etc/ERD.png" alt="erd" width="800px" title="ERD" border="5" />
 </div>
 
 <br>
