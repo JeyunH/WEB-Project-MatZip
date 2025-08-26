@@ -120,3 +120,7 @@ MatZip-WEB-Project/
 <img src="./etc/admin200.gif" alt="서비스 화면" width="800px" />
 
 <br/>
+
+## 🧑‍💻 개발자
+*   **황제윤** ([@JeyunH](https://github.com/JeyunH))
+*   폴리텍 성남 하이테크과정[인공지능소프트웨어과]
